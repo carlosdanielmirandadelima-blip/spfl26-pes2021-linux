@@ -1,0 +1,7 @@
+*.exe
+*.cpk
+*.D01
+*.tar.gz
+*.tar.xz
+*.log
+.DS_Store
