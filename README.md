@@ -100,17 +100,20 @@ Three windows will pop up during the install and you have to click through them.
 
 ### The one thing you must get right
 
-Every installer asks where to put the files. All three of them, the base game and both updates, need the exact same folder:
+Every installer asks where to put the files. All three of them, the base game and both updates, need the **exact same folder**. Which folder is up to you, as long as it is the same one three times.
+
+Two paths work:
 
 ```
 C:\Games\SPFL26
+C:\Program Files (x86)\SP Football Life 2026
 ```
 
-Type it in, or use the `...` button and browse to `C:` then `Games` then `SPFL26`.
+The second one is what the base installer suggests, so keeping the default is fine. The script checks both places afterwards and links them together, so the launcher finds the game either way.
 
-The updates default to `C:\Program Files (x86)\SP Football Life 2026`, which is wrong. If you leave it and the installer offers to create that folder, say **No** and fix the path. The updates patch files that are already there, so pointing them at an empty folder gets you nothing.
+What breaks the install is mixing them. The updates patch files that are already there, so pointing them at an empty folder gets you nothing and no error either. If an installer offers to create a folder that should already exist, say **No** and fix the path, because that prompt means you are in the wrong place.
 
-Do not use a `Z:\` path either. `Z:` maps your whole Linux filesystem and Sider gets weird with it. Stick to `C:\Games\SPFL26`.
+Do not use a `Z:\` path. `Z:` maps your whole Linux filesystem and Sider gets weird with it.
 
 ### Install order
 
@@ -122,15 +125,29 @@ Check `dataSP/version.txt` inside the game folder after each one. It should read
 
 If a window ever says "not responding", click Wait. The installer even says so on screen, it stops answering the window manager while it copies. Give it time. If it sits on the same file and the same percentage for several minutes, then it really is stuck. Close it and run that installer again.
 
-## Two shortcuts, not one
+## The shortcut
 
-The script creates both:
+The script creates one, **SP Football Life 2026**, on your desktop and in your application menu.
 
-**SP Football Life 2026 Settings** is where you set your resolution and screen mode. Open this one first, before your first match. The game does not have these options in its own menu, they live in a separate app.
-
-**SP Football Life 2026** is the game.
+It used to create a second one for `Settings.exe`, the app that sets resolution and screen mode. That app does not run under Proton, so the shortcut is gone. See below for the details.
 
 ![Shortcuts](screenshots/shortcuts.png)
+
+### Settings.exe does not work, and the game is fine without it
+
+`Settings.exe` is a .NET app that wants .NET Framework 4.8. Proton ships Wine Mono instead, which is close but not close enough here. It loads, then dies with a page fault inside `Settings_b.dll`:
+
+```
+mscoree:parse_supported_runtime sku="NETFramework,Version=v4.8" not implemented
+wine: Unhandled page fault on read access to 00000004
+err:mscoree:expect_no_runtimes Process exited with a Mono runtime loaded
+```
+
+Same crash on every machine tried, at the same offsets, so this is not a driver or a hardware thing. There is no second config tool in the game either, just `Settings.exe` and its DLL.
+
+The game runs at a sane default and full matches play through without ever opening it. That is why the shortcut was dropped: a launcher that only ever crashes is worse than no launcher.
+
+The script still writes `~/Games/spfl26-settings.sh` if you want to try. Installing .NET Framework 4.8 into the prefix with winetricks might fix it. That was not tested here, and it is a heavy dependency for a resolution picker, so it is left as an idea rather than a step. If you get it working, a PR would be welcome.
 
 ## Controller
 
@@ -145,6 +162,26 @@ If you want to keep Steam open, go to Settings, Controller, and turn off Xbox co
 ## If something breaks
 
 These are the errors I hit and what fixed them.
+
+**The script says `FL_2026.exe not found` while the installer is still copying**
+
+`SPFL26_setup.exe` is a bootstrapper. It unpacks the real installer, starts it, and exits straight away. Anything waiting on that first process thinks the install finished after a few seconds and checks for a game that has not copied a single file yet.
+
+Wait on the prefix instead of the process:
+
+```bash
+WINEPREFIX="$PREFIX/pfx" wineserver -w
+```
+
+That returns when everything inside the prefix is done, bootstrapper and installer both. The script does this now, so if you see this error you are on an old copy.
+
+**The script picks the wrong GPU on a laptop**
+
+Taking the first display adapter out of `lspci` gives you the integrated chip on any hybrid laptop, because that is the order the bus reports. Filter for a discrete card first and fall back to the first adapter only when there is one card:
+
+```bash
+lspci | grep -iE 'vga|3d|display' | grep -iE 'nvidia|amd/ati|radeon' | head -1
+```
 
 **`Unable to create interface ISteamUser`**
 

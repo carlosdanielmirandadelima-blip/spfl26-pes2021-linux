@@ -434,28 +434,24 @@ create_launchers() {
     write_launcher "$GAMES_ROOT/spfl26-settings.sh" "Settings.exe"      0
 
     local icon_game="$ICON_DIR/spfl26.png"
-    local icon_settings="$ICON_DIR/spfl26-settings.png"
-    [[ -f "$icon_game" ]]     || icon_game="applications-games"
-    [[ -f "$icon_settings" ]] || icon_settings="preferences-desktop-display"
+    [[ -f "$icon_game" ]] || icon_game="applications-games"
 
     write_desktop_entry "$APPS_DIR/spfl26.desktop" \
         "SP Football Life 2026" "PES 2021 with SmokePatch, running through Proton" \
         "$GAMES_ROOT/spfl26-play.sh" "$icon_game"
 
-    write_desktop_entry "$APPS_DIR/spfl26-settings.desktop" \
-        "SP Football Life 2026 Settings" "Resolution and video options" \
-        "$GAMES_ROOT/spfl26-settings.sh" "$icon_settings"
+    rm -f "$APPS_DIR/spfl26-settings.desktop"
 
     local desktop_dir
     desktop_dir=$(xdg-user-dir DESKTOP 2>/dev/null || printf '%s' "$HOME/Desktop")
     if [[ -d "$desktop_dir" ]]; then
-        cp "$APPS_DIR/spfl26.desktop" "$APPS_DIR/spfl26-settings.desktop" "$desktop_dir/"
-        chmod +x "$desktop_dir/spfl26.desktop" "$desktop_dir/spfl26-settings.desktop"
+        rm -f "$desktop_dir/spfl26-settings.desktop"
+        cp "$APPS_DIR/spfl26.desktop" "$desktop_dir/"
+        chmod +x "$desktop_dir/spfl26.desktop"
         if command -v gio >/dev/null 2>&1; then
             gio set "$desktop_dir/spfl26.desktop" metadata::trusted true 2>/dev/null || true
-            gio set "$desktop_dir/spfl26-settings.desktop" metadata::trusted true 2>/dev/null || true
         fi
-        ok "desktop shortcuts created in $desktop_dir"
+        ok "desktop shortcut created in $desktop_dir"
     fi
 
     command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS_DIR" 2>/dev/null || true
@@ -471,9 +467,9 @@ summary() {
     log "  Game folder : $game_dir"
     log "  Prefix      : $COMPAT_DATA"
     log "  Play        : $GAMES_ROOT/spfl26-play.sh"
-    log "  Settings    : $GAMES_ROOT/spfl26-settings.sh"
     log ""
-    log "  Open Settings first to pick your resolution, then start the game."
+    log "  Settings.exe needs .NET Framework 4.8 and crashes under Wine Mono."
+    log "  The game runs fine without it. See the README."
     log "  Close Steam before playing or it will grab your controller."
     log ""
 }
