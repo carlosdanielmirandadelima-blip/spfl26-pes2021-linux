@@ -284,19 +284,26 @@ create_prefix() {
 
 link_default_install_path() {
     local drive_c="$COMPAT_DATA/pfx/drive_c"
-    mkdir -p "$drive_c/Program Files (x86)"
-    ln -sfn "$drive_c/Games/SPFL26" "$drive_c/Program Files (x86)/SP Football Life 2026"
+    local default="$drive_c/Program Files (x86)/SP Football Life 2026"
+    mkdir -p "$drive_c/Program Files (x86)" "$drive_c/Games"
+    if [[ -d "$default" && ! -L "$default" ]]; then
+        [[ -e "$drive_c/Games/SPFL26" ]] || ln -sfn "$default" "$drive_c/Games/SPFL26"
+        return 0
+    fi
+    ln -sfn "$drive_c/Games/SPFL26" "$default"
 }
 
 run_windows_installer() {
     local exe="$1"
     local title="$2"
     info "$title"
-    log "  A window will open. It will suggest the wrong folder."
+    local win_dir
+    win_dir=$(windows_game_dir)
+    log "  A window will open. Check the folder it suggests."
     log ""
-    log "      Set the folder to:  C:\\Games\\SPFL26"
+    log "      The game is at:  $win_dir"
     log ""
-    log "  Use the ... button and browse to C: then Games then SPFL26 if typing lags."
+    log "  Use the ... button and browse to that folder if typing lags."
     log "  If it offers to create the folder, say No and fix the path instead."
     log "  If the window says it is not responding, choose Wait. It is only busy copying."
     log ""
@@ -333,12 +340,24 @@ apply_patches() {
     [[ -f "$version_file" ]] && ok "game version: $(head -1 "$version_file")"
 }
 
+windows_game_dir() {
+    local dir
+    dir=$(resolve_game_dir)
+    case "$dir" in
+        *"/Program Files (x86)/SP Football Life 2026")
+            printf '%s' 'C:\Program Files (x86)\SP Football Life 2026' ;;
+        *) printf '%s' 'C:\Games\SPFL26' ;;
+    esac
+}
+
 resolve_game_dir() {
-    if [[ -f "$GAME_DIR/FL_2026.exe" ]]; then
-        printf '%s' "$GAME_DIR"
-    else
-        printf '%s' "$COMPAT_DATA/pfx/drive_c/Games/SPFL26"
-    fi
+    local fallback="$COMPAT_DATA/pfx/drive_c/Games/SPFL26"
+    local dir
+    for dir in "$GAME_DIR" "$fallback" \
+               "$COMPAT_DATA/pfx/drive_c/Program Files (x86)/SP Football Life 2026"; do
+        if [[ -f "$dir/FL_2026.exe" ]]; then printf '%s' "$dir"; return 0; fi
+    done
+    printf '%s' "$fallback"
 }
 
 write_launcher() {
