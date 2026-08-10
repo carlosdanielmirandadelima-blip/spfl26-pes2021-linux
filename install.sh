@@ -112,8 +112,10 @@ check_disk_space() {
 }
 
 check_gpu() {
-    local gpu
-    gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -1 | sed 's/.*: //') || true
+    local all gpu
+    all=$(lspci 2>/dev/null | grep -iE 'vga|3d|display') || true
+    gpu=$(printf '%s\n' "$all" | grep -iE 'nvidia|amd/ati|radeon' | head -1 | sed 's/.*: //')
+    [[ -n "$gpu" ]] || gpu=$(printf '%s\n' "$all" | head -1 | sed 's/.*: //')
     [[ -n "$gpu" ]] && ok "GPU: $gpu" || warn "could not read GPU model"
 }
 
@@ -254,6 +256,12 @@ install_proton() {
     ok "$GE_PROTON_VERSION ready"
 }
 
+wait_for_installer() {
+    local server="$(dirname "$PROTON_BIN")/files/bin/wineserver"
+    [[ -x "$server" ]] || return 0
+    WINEPREFIX="$COMPAT_DATA/pfx" "$server" -w 2>/dev/null || true
+}
+
 proton_env() {
     export STEAM_COMPAT_CLIENT_INSTALL_PATH="$STEAM_ROOT"
     export STEAM_COMPAT_DATA_PATH="$COMPAT_DATA"
@@ -294,6 +302,7 @@ run_windows_installer() {
     log ""
     proton_env
     ( cd "$(dirname "$exe")" && python3 "$PROTON_BIN" run "$exe" ) >/dev/null 2>&1 || true
+    wait_for_installer
     ok "$title finished"
 }
 
@@ -309,6 +318,7 @@ install_base_game() {
     log ""
     proton_env
     ( cd "$(dirname "$SETUP_EXE")" && python3 "$PROTON_BIN" run "$SETUP_EXE" ) >/dev/null 2>&1 || true
+    wait_for_installer
     [[ -f "$COMPAT_DATA/pfx/drive_c/Games/SPFL26/FL_2026.exe" ]] \
         || die "FL_2026.exe not found after the setup. Run again and pick C:\\Games\\SPFL26"
     ok "base game installed"
