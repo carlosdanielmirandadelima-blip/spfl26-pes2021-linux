@@ -1,6 +1,10 @@
 # SP Football Life 2026 (PES 2021) on Linux
 
-Play PES 2021 with the SP Football Life 2026 patch on Linux. Tested on Zorin OS, built to work on Bazzite and SteamOS too.
+**Play PES 2021 with the SP Football Life 2026 patch on Linux.** One script, no sudo, controller working, both updates applied.
+
+**Read this in other languages:** [Português do Brasil](README.pt-BR.md) · [Español](README.es.md)
+
+Tested on Ubuntu based systems and built so it also works on **Bazzite, SteamOS and the Steam Deck**, where you cannot install anything system wide.
 
 I got SP Football Life 2026 running on Linux and it plays great, so I wrote down everything I did.
 
@@ -205,10 +209,6 @@ Same root cause as above, just quieter. On plain Wine there is no error popup, t
 
 Do not use the Wine virtual desktop to work around fullscreen problems. It breaks Vulkan (`VK_KHR_surface` disappears) and the game crashes instead of just misbehaving.
 
-**Settings.exe crashes**
-
-It uses WinForms and wine-mono does not implement all of it. Run it through Proton with the launcher from this repo and it works.
-
 **A black console window loops forever after an update**
 
 At the end of the updates a script called `OneDrive.bat` runs. On Windows it moves your save between the normal Documents folder and the OneDrive one. There is no OneDrive here, so it asks "file or directory?" over and over and never stops.
@@ -233,19 +233,20 @@ Run that twice, thirty seconds apart. If both numbers move, it is working and yo
 
 Do not check with `find -newermt`. The installers keep the original timestamps on the files they write, so a time based check shows nothing even while it is copying. That one fooled me for a while.
 
-Also do not point an update at a symlinked folder. I tried linking `C:\Program Files (x86)\SP Football Life 2026` to the real game folder so I could skip typing the path, and update 2.0 hung at 38 percent every time. Pointing it straight at `C:\Games\SPFL26` finished with no problem.
+Also do not point an update at a symlinked folder. I tried linking `C:\Program Files (x86)\SP Football Life 2026` to the real game folder so I could skip typing the path, and update 2.0 hung at 38 percent every time. Pointing it at the real folder finished with no problem.
+
+The script links both paths together so the launcher works either way, which means one of them is a symlink on your machine too. That is why it prints the real folder on screen before each update window opens. Type the path it prints, not the other one.
 
 ## Where everything goes
 
 ```
 ~/Games/
-├── spfl26/                        prefix, with the game in drive_c/Games/SPFL26
-├── spfl26-proton/                 Proton compat data
+├── spfl26-proton/                 prefix and Proton compat data
 ├── spfl26-play.sh                 game launcher
-└── spfl26-settings.sh             settings launcher
+└── spfl26-settings.sh             settings launcher, see the note above
 ```
 
-Nothing is written outside your home folder. To uninstall, delete `~/Games/spfl26*` and the two `.desktop` files.
+Nothing is written outside your home folder. To uninstall, delete `~/Games/spfl26*` and the `.desktop` file.
 
 ## Credits
 
